@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:47:44 -0700
+Subject: gin_with_namespace.patch
+
+When using gin with native_mate together we may have C++ confused with
+finding the correct ConvertFromV8. We add gin:: namespace explicitly in
+those calls to work around the ambiguous compilation error.
+
+Note that this is only a work around to make it easier to remove
+native_mate, and we should remove this patch once native_mate is erased
+from Electron.
+
+diff --git a/gin/arguments.h b/gin/arguments.h
+index eaded13e2991..4abe0defc748 100644
+--- a/gin/arguments.h
++++ b/gin/arguments.h
+@@ -28,14 +28,14 @@ class GIN_EXPORT Arguments {
+     v8::Local<v8::Object> holder = is_for_property_
+                                        ? info_for_property_->Holder()
+                                        : info_for_function_->Holder();
+-    return ConvertFromV8(isolate_, holder, out);
++    return gin::ConvertFromV8(isolate_, holder, out);
+   }
+ 
+   template<typename T>
+   bool GetData(T* out) {
+     v8::Local<v8::Value> data = is_for_property_ ? info_for_property_->Data()
+                                                  : info_for_function_->Data();
+-    return ConvertFromV8(isolate_, data, out);
++    return gin::ConvertFromV8(isolate_, data, out);
+   }
+ 
+   template<typename T>
+@@ -45,7 +45,7 @@ class GIN_EXPORT Arguments {
+       return false;
+     }
+     v8::Local<v8::Value> val = (*info_for_function_)[next_++];
+-    return ConvertFromV8(isolate_, val, out);
++    return gin::ConvertFromV8(isolate_, val, out);
+   }
+ 
+   template<typename T>
+@@ -58,7 +58,7 @@ class GIN_EXPORT Arguments {
+     out->resize(remaining);
+     for (int i = 0; i < remaining; ++i) {
+       v8::Local<v8::Value> val = (*info_for_function_)[next_++];
+-      if (!ConvertFromV8(isolate_, val, &out->at(i)))
++      if (!gin::ConvertFromV8(isolate_, val, &out->at(i)))
+         return false;
+     }
+     return true;
