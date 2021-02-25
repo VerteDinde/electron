@@ -59,7 +59,7 @@ describe('webFrame module', function () {
       let callbackResult, callbackError;
 
       const executeJavaScriptInIsolatedWorld = childFrame
-        .executeJavaScriptInIsolatedWorld(999, [{ code: '1 + 1' }], (result, error) => {
+        .executeJavaScriptInIsolatedWorld(999, '1 + 1', (result, error) => {
           callbackResult = result;
           callbackError = error;
         });

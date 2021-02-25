@@ -271,8 +271,8 @@ describe('webContents module', () => {
     });
 
     it('resolves the returned promise with the result', async () => {
-      await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }]);
-      const isolatedResult = await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X' }]);
+      await w.webContents.executeJavaScriptInIsolatedWorld(999, 'window.X = 123');
+      const isolatedResult = await w.webContents.executeJavaScriptInIsolatedWorld(999, 'window.X');
       const mainWorldResult = await w.webContents.executeJavaScript('window.X');
       expect(isolatedResult).to.equal(123);
       expect(mainWorldResult).to.equal(undefined);

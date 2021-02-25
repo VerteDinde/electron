@@ -184,7 +184,7 @@ WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) 
 };
 WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, 'executeJavaScriptInIsolatedWorld', worldId, code, !!hasUserGesture);
+  return this.mainFrame.executeJavaScriptInIsolatedWorld(worldId, code, !!hasUserGesture);
 };
 
 // Translate the options of printToPDF.
