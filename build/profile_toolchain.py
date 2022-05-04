@@ -64,6 +64,8 @@ def windows_installed_software():
     )
 
     stdout, _ = proc.communicate(" ".join(powershell_command).encode("utf-8"))
+    print(stdout)
+    print(proc.returncode)
 
     if proc.returncode != 0:
         raise RuntimeError("Failed to get list of installed software")
