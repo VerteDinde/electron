@@ -23,7 +23,8 @@ async function checkIfDocOnlyChange () {
             pullRequestNumber = prsForBranch.data[0].number;
           } else {
             // If there are 0 PRs or more than one PR on a branch, just assume that this is more than a doc change
-            process.exit(1);
+            console.error('Could not find PR number, let\'s gooooo');
+            return 1;
           }
         }
       }
@@ -43,7 +44,8 @@ async function checkIfDocOnlyChange () {
         }
       });
       if (nonDocChange || filesChanged.length === 0) {
-        process.exit(1);
+        // process.exit(1);
+        return 1;
       } else {
         process.exit(0);
       }
