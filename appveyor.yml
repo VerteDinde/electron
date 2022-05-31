@@ -103,8 +103,9 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
+  # Patches are applied  in the image bake; run hooks here
   # - gclient sync --with_branch_heads --with_tags
-  - python3 src/electron/script/apply_all_patches.py src/electron/patches/config.json
+  - gclient runhooks
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
@@ -187,7 +188,7 @@ deploy_script:
       }
 on_finish:
   # Uncomment this lines to enable RDP
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - cd ..
   - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
   - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
