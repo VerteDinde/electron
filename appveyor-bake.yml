@@ -45,7 +45,7 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
-  - gclient sync --with_branch_heads --with_tags
+  - gclient sync --with_branch_heads --with_tags --nohooks
   - ps: >-
       echo "Finishing sync for image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
 on_image_bake:
