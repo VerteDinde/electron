@@ -59,7 +59,7 @@ C:\TEMP\wsdk10.exe /features /quiet
 
 REM Install nodejs python git and yarn needed dependencies
 choco install -y nodejs-lts python2 git yarn
-choco install python --version 3.9.12
+choco install python --version 3.7.9
 choco install windows-sdk-10-version-2004-windbg
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;C:\Python39\;C:\Python39\Scripts;%PATH%
