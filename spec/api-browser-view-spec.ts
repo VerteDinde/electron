@@ -82,6 +82,7 @@ describe('BrowserView module', () => {
         x: display.size.width / 2,
         y: display.size.height / 2
       });
+      console.log('CENTER COLOR: ', centerColor);
 
       expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
     });
@@ -108,6 +109,7 @@ describe('BrowserView module', () => {
         x: display.size.width / 2,
         y: display.size.height / 2
       });
+      console.log('CENTER COLOR: ', centerColor);
 
       expect(areColorsSimilar(centerColor, VIEW_BACKGROUND_COLOR)).to.be.true();
     });
