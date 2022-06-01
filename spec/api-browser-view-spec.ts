@@ -82,9 +82,13 @@ describe('BrowserView module', () => {
         x: display.size.width / 2,
         y: display.size.height / 2
       });
+      console.log('*********************');
       console.log('CENTER COLOR: ', centerColor);
+      console.log('WINDOW_BACKGROUND_COLOR: ', WINDOW_BACKGROUND_COLOR);
+      console.log('*********************');
 
-      expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
+      expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.false();
+      // expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -109,9 +113,13 @@ describe('BrowserView module', () => {
         x: display.size.width / 2,
         y: display.size.height / 2
       });
+      console.log('*********************');
       console.log('CENTER COLOR: ', centerColor);
+      console.log('VIEW_BACKGROUND_COLOR: ', VIEW_BACKGROUND_COLOR);
+      console.log('*********************');
 
-      expect(areColorsSimilar(centerColor, VIEW_BACKGROUND_COLOR)).to.be.true();
+      expect(areColorsSimilar(centerColor, VIEW_BACKGROUND_COLOR)).to.be.false();
+      // expect(areColorsSimilar(centerColor, VIEW_BACKGROUND_COLOR)).to.be.true();
     });
   });
 
