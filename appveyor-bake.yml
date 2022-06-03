@@ -10,8 +10,6 @@
 #      Typically named after the Chromium version on which the image is built.
 #      This can be set dynamically in the prepare-appveyor script.
 version: 1.0.{build}
-# build_cloud: electron-16-core
-# image: vs2019bt-16.16.11
 # build_cloud: electron-16-core2
 # image: base-electron
 build_cloud: electronhq-16-core
@@ -36,16 +34,14 @@ build_script:
   - src\electron\script\setup-win-for-dev.bat
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: >-
-      if ($env:GN_CONFIG -ne 'release') {
-        $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
-      }
+      $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
   - >-
       gclient config
       --name "src\electron"
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
-  - gclient sync --with_branch_heads --with_tags --nohooks
+  - gclient sync
   - ps: >-
       echo "Finishing sync for image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
 on_image_bake:
