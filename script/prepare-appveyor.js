@@ -190,8 +190,11 @@ async function prepareAppVeyorImage (opts) {
     const deps = fs.readFileSync(path.resolve(__dirname, '../DEPS'), 'utf8');
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
+    // get deps hash and check against the deps
+    const depshash = fs.readFileSync(path.resolve(__dirname, '../.depshash')).toString();
+
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
-    const imageVersion = opts.imageVersion || `electron-${CHROMIUM_VERSION}`;
+    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}-${depshash}`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
     if (image && image.name) {
@@ -201,7 +204,7 @@ async function prepareAppVeyorImage (opts) {
       console.log(`No AppVeyor image found for ${imageVersion} in ${cloudId}.
                    Creating new image for ${imageVersion}, using Chromium ${CHROMIUM_VERSION} - job will run after image is baked.`);
       await bakeAppVeyorImage(branch, { ...opts, version: imageVersion, cloudId });
-      // useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId });
+      useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId });
     }
   }
 }
