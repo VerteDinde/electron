@@ -30,6 +30,7 @@ build_script:
   - mkdir src
   - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
   - ps: $env:PATH="$pwd\depot_tools;$env:PATH"  
+  - update_depot_tools.bat
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - src\electron\script\setup-win-for-dev.bat
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"

@@ -27,6 +27,9 @@ def read_node_config_gypi():
   config_gypi = os.path.join(NODE_DIR, 'config.gypi')
   with open(config_gypi, 'r') as f:
     content = f.read()
+    print('******* CONTENT *******')
+    print(content)
+    print('******* END CONTENT *******')
     return ast.literal_eval(content)
 
 def read_electron_args():
@@ -43,6 +46,10 @@ def read_electron_args():
   return args
 
 def main(target_file, target_cpu):
+  print('Target File: ')
+  print(target_file)
+  print('Target CPU: ')
+  print(target_cpu)
   run_node_configure(target_cpu)
   config = read_node_config_gypi()
   args = read_electron_args()
