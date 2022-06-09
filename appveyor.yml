@@ -53,7 +53,7 @@ build_script:
           # Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
         }
       }
-  - echo "Building $env:GN_CONFIG build"
+  - ps: echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
   - ps: >-
@@ -65,6 +65,15 @@ build_script:
   - ps: >-
       if (Test-Path -Path "$pwd\src\electron") {
         Remove-Item -Recurse -Force $pwd\src\electron
+      }
+  - ps: >-
+      if (Test-Path -Path "$pwd\.electron_build_tools") {
+        Remove-Item -Recurse -Force $pwd\.electron_build_tools
+        Remove-Item -Recurse -Force $pwd\build_tools
+      }
+      if (Test-Path -Path "$pwd\build_tools") {
+        Remove-Item -Recurse -Force $pwd\.electron_build_tools
+        Remove-Item -Recurse -Force $pwd\build_tools
       }
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: >-
@@ -108,6 +117,7 @@ build_script:
   # - ps: >-
   #     $env:RUN_GCLIENT_SYNC="false"
   # - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync )
+  - gclient runhooks
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
