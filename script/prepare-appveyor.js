@@ -12,16 +12,6 @@ const APPVEYOR_IMAGES_URL = 'https://ci.appveyor.com/api/build-clouds';
 const APPVEYOR_JOB_URL = 'https://ci.appveyor.com/api/builds';
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium$/;
 
-// const DEFAULT_BUILD_CLOUD_ID = '1424';
-// const DEFAULT_BUILD_CLOUD = 'electron-16-core2';
-// const DEFAULT_BAKE_BASE_IMAGE = 'base-electron';
-// const DEFAULT_BUILD_IMAGE = 'base-electron';
-
-// const DEFAULT_BUILD_CLOUD_ID = '861';
-// const DEFAULT_BUILD_CLOUD = 'electron-16-core';
-// const DEFAULT_BAKE_BASE_IMAGE = 'vs2019bt-16.16.11';
-// const DEFAULT_BUILD_IMAGE = 'vs2019bt-16.16.11';
-
 const DEFAULT_BUILD_CLOUD_ID = '1598';
 const DEFAULT_BUILD_CLOUD = 'electronhq-16-core';
 const DEFAULT_BAKE_BASE_IMAGE = 'Windows_Default_Appveyor';
@@ -29,10 +19,9 @@ const DEFAULT_BUILD_IMAGE = 'Windows_Default_Appveyor';
 
 const appveyorBakeJob = 'electron-bake-image';
 const appVeyorJobs = {
-  // TODO: Disabling other jobs so I don't blast this across three jobs while testing
-  'electron-x64': 'electron-ljo26' // 'electron-x64-testing'
-  // 'electron-woa': 'electron-ldhmv' // 'electron-woa-testing'
-  // 'electron-ia32': 'electron-ia32-testing', // this has no alt slug
+  'electron-x64': 'electron-x64-testing',
+  'electron-woa': 'electron-woa-testing',
+  'electron-ia32': 'electron-ia32-testing'
 };
 
 async function makeRequest ({ auth, url, headers, body, method }) {
@@ -103,7 +92,7 @@ function useAppVeyorImage (targetBranch, options) {
 
 async function callAppVeyorBuildJobs (targetBranch, job, options) {
   console.log(`Using AppVeyor image ${options.version} for ${job}`);
-  const pullRequestId = await getPullRequestId(targetBranch);
+  // const pullRequestId = await getPullRequestId(targetBranch);
   const environmentVariables = {
     APPVEYOR_BUILD_WORKER_CLOUD: DEFAULT_BUILD_CLOUD,
     APPVEYOR_BUILD_WORKER_IMAGE: options.version,
@@ -190,11 +179,8 @@ async function prepareAppVeyorImage (opts) {
     const deps = fs.readFileSync(path.resolve(__dirname, '../DEPS'), 'utf8');
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
-    // get deps hash and check against the deps
-    const depshash = fs.readFileSync(path.resolve(__dirname, '../.depshash')).toString();
-
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
-    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}-${depshash}`;
+    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}-sync`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
     if (image && image.name) {
@@ -204,7 +190,7 @@ async function prepareAppVeyorImage (opts) {
       console.log(`No AppVeyor image found for ${imageVersion} in ${cloudId}.
                    Creating new image for ${imageVersion}, using Chromium ${CHROMIUM_VERSION} - job will run after image is baked.`);
       await bakeAppVeyorImage(branch, { ...opts, version: imageVersion, cloudId });
-      useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId });
+      // useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId });
     }
   }
 }

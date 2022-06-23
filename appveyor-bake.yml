@@ -24,52 +24,6 @@ environment:
   DEPOT_TOOLS_WIN_TOOLCHAIN: 0
   PYTHONIOENCODING: UTF-8
 build_script:
-  # - echo "Building $env:GN_CONFIG build"
-  # - git config --global core.longpaths true
-  # - cd ..
-  # - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
-  # - ps: $env:PATH="$pwd\depot_tools;$env:PATH" 
-  # - ps: >-
-  #     if (Test-Path -Path "$pwd\src\electron") {
-  #       Remove-Item -Recurse -Force $pwd\src\electron
-  #     }
-  # - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
-  # - ps: >-
-  #     if (Test-Path 'env:RAW_GOMA_AUTH') {
-  #       $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
-  #       $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
-  #     }
-  # - git clone https://github.com/electron/build-tools.git
-  # - cd build-tools
-  # - npm install
-  # - mkdir third_party
-  # - ps: >-
-  #     node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
-  # - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
-  # - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
-  # - cd ..
-  # - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
-  # - ps: >-
-  #     if (Test-Path 'env:RAW_GOMA_AUTH') {
-  #       $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
-  #       if ($goma_login -eq 'Login as Fermi Planck') {
-  #         Write-warning "Goma authentication is correct";
-  #       } else {
-  #         Write-warning "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token.";
-  #         $host.SetShouldExit(1)
-  #       }
-  #     }
-  # - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
-  # - ps: >-
-  #     if ($env:GN_CONFIG -ne 'release') {
-  #       $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
-  #     }
-  # - >-
-  #     gclient config
-  #     --name "src\electron"
-  #     --unmanaged
-  #     %GCLIENT_EXTRA_ARGS%
-  #     "https://github.com/electron/electron"
   - ps: echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
@@ -114,25 +68,12 @@ build_script:
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
-  # Build Electron files that take longer to finish building
-  - cd src
-  - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
-  - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
-  - gn check out/Default //electron:electron_lib
-  - gn check out/Default //electron:electron_app
-  - gn check out/Default //electron/shell/common/api:mojo
-  - if DEFINED GN_GOMA_FILE (echo "defined!") else (echo "undefined!")
-  - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
-  # Needed to remove electron directory and depot tools
-  - cd ..
-  - ps: >-
-      echo "Finishing sync for image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
 on_image_bake:
   - ps: >-
       echo "Baking image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
   - ps: Remove-Item -Recurse -Force $pwd\depot_tools
+  - ps: Remove-Item -Recurse -Force $pwd\build_tools
   - ps: Remove-Item -Recurse -Force $pwd\src\electron
-  - ps: Remove-Item -Recurse -Force $pwd\build-tools
 # Uncomment these lines to enable RDP
 #on_finish:
 #  - ps: >-
