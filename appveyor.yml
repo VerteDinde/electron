@@ -29,7 +29,7 @@ version: 1.0.{build}
 # build_cloud: electron-16-core2
 # image: base-electron
 build_cloud: electronhq-16-core
-image: electron-104.0.5073.0
+image: e-105.0.5173.0-sync
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -61,8 +61,8 @@ build_script:
         Remove-Item -Recurse -Force $pwd\depot_tools
       }
   - ps: >-
-      if (Test-Path -Path "$pwd\build_tools") {
-        Remove-Item -Recurse -Force $pwd\build_tools
+      if (Test-Path -Path "$pwd\build-tools") {
+        Remove-Item -Recurse -Force $pwd\build-tools
       }
   - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
   - ps: $env:PATH="$pwd\depot_tools;$env:PATH" 
@@ -111,7 +111,7 @@ build_script:
   # TODO: Add a script that reads the current Chromium version and the current depshash
   # - ps: >-
   #     $env:RUN_GCLIENT_SYNC="false"
-  # - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync )
+  # - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags )
   - gclient runhooks
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 

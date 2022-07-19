@@ -67,13 +67,16 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
-  - gclient sync --with_branch_heads --with_tags
+  - gclient sync --with_branch_heads --with_tags --nohooks
 on_image_bake:
   - ps: >-
       echo "Baking image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
   - ps: Remove-Item -Recurse -Force $pwd\depot_tools
-  - ps: Remove-Item -Recurse -Force $pwd\build_tools
   - ps: Remove-Item -Recurse -Force $pwd\src\electron
+  - ps: >-
+      if (Test-Path -Path "$pwd\build-tools") {
+        Remove-Item -Recurse -Force $pwd\build-tools
+      }
 # Uncomment these lines to enable RDP
 #on_finish:
 #  - ps: >-
