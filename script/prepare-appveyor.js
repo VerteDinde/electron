@@ -100,7 +100,8 @@ function useAppVeyorImage (targetBranch, options) {
 
 async function callAppVeyorBuildJobs (targetBranch, job, options) {
   console.log(`Using AppVeyor image ${options.version} for ${job}`);
-  // const pullRequestId = await getPullRequestId(targetBranch);
+  
+  const pullRequestId = await getPullRequestId(targetBranch);
   const environmentVariables = {
     APPVEYOR_BUILD_WORKER_CLOUD: DEFAULT_BUILD_CLOUD,
     APPVEYOR_BUILD_WORKER_IMAGE: options.version,
@@ -124,7 +125,7 @@ async function callAppVeyorBuildJobs (targetBranch, job, options) {
       accountName: 'electron-bot',
       projectSlug: appVeyorJobs[job],
       branch: targetBranch,
-      // pullRequestId: pullRequestId,
+      pullRequestId: pullRequestId || undefined,
       commitId: options.commit || undefined,
       environmentVariables
     }),
@@ -177,7 +178,6 @@ async function bakeAppVeyorImage (targetBranch, options) {
 }
 
 async function prepareAppVeyorImage (opts) {
-  // filter out roller/chromium branches from baking
   const branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], ELECTRON_DIR);
   if (ROLLER_BRANCH_PATTERN.test(branch)) {
     useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId: DEFAULT_BUILD_CLOUD_ID });
@@ -188,7 +188,7 @@ async function prepareAppVeyorImage (opts) {
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
-    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}-testing`;
+    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}-test`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
     if (image && image.name) {
