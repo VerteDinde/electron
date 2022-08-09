@@ -29,7 +29,7 @@ version: 1.0.{build}
 # build_cloud: electron-16-core2
 # image: base-electron
 build_cloud: electronhq-16-core
-image: e-105.0.5173.0-sync
+image: e-105.0.5187.0-testing
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -107,19 +107,39 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
-  # Patches are applied  in the image bake; run hooks here
-  # TODO: Add a script that reads the current Chromium version and the current depshash
-  # - ps: >-
-  #     $env:RUN_GCLIENT_SYNC="false"
-  # - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags )
-  - gclient runhooks
+  # Patches are applied in the image bake. Check depshash to see if patches have changed. 
+  - ps: $env:RUN_GCLIENT_SYNC="false"
+  - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
+  - ps: cd src\electron
+  - ps: node script\generate-deps-hash.js
+  - ps: $depshash = Get-Content .\.depshash -Raw
+  - ps: $zipfile = "Z:\$depshash.7z"
+  - ps: cd ..\..
+  # TODO: Remove these debugging lines
+  - ps: echo $depshash_baked
+  - ps: echo $depshash
+  # End remove lines
+  - ps: >-
+      if ($depshash_baked -eq $depshash) {
+        $env:RUN_GCLIENT_SYNC="true"
+        if (Test-Path -Path $zipfile) {
+          # file exists, unzip and then gclient sync
+          7z x -y $zipfile -mmt=30 -aoa
+          if (-not (Test-Path -Path "src\buildtools")) {
+            if ($env:TARGET_ARCH -ne 'ia32') {
+              # only save on x64/woa to avoid contention saving
+              $env:SAVE_GCLIENT_SRC="true"
+            }
+          }
+        }
+      }
+  - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
   - gn check out/Default //electron/shell/common/api:mojo
-  - if DEFINED GN_GOMA_FILE (echo "defined!") else (echo "undefined!")
   - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
   - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
