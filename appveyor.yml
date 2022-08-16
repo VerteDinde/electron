@@ -24,12 +24,8 @@
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
 
 version: 1.0.{build}
-# build_cloud: electron-16-core
-# image: vs2019bt-16.16.11
-# build_cloud: electron-16-core2
-# image: base-electron
-build_cloud: electronhq-16-core
-image: e-105.0.5187.0-testing
+build_cloud: electron-16-core2
+image: base-electron
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -115,10 +111,6 @@ build_script:
   - ps: $depshash = Get-Content .\.depshash -Raw
   - ps: $zipfile = "Z:\$depshash.7z"
   - ps: cd ..\..
-  # TODO: Remove these debugging lines
-  - ps: echo $depshash_baked
-  - ps: echo $depshash
-  # End remove lines
   - ps: >-
       if ($depshash_baked -eq $depshash) {
         $env:RUN_GCLIENT_SYNC="true"
@@ -216,7 +208,7 @@ deploy_script:
       }
 on_finish:
   # Uncomment this lines to enable RDP
-  # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - cd ..
   - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
   - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
