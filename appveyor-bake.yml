@@ -9,9 +9,8 @@
 #  - "APPVEYOR_BAKE_IMAGE" e.g. 'electron-99.0.4767.0'. Name of the image to be baked.
 #      Typically named after the Chromium version on which the image is built.
 #      This can be set dynamically in the prepare-appveyor script.
+
 version: 1.0.{build}
-# build_cloud: electron-16-core2
-# image: base-electron
 build_cloud: electronhq-16-core
 image: Windows_Default_Appveyor
 environment:
