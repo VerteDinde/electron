@@ -12,10 +12,10 @@ const APPVEYOR_IMAGES_URL = 'https://ci.appveyor.com/api/build-clouds';
 const APPVEYOR_JOB_URL = 'https://ci.appveyor.com/api/builds';
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium$/;
 
-const DEFAULT_BUILD_CLOUD_ID = '1598';
-const DEFAULT_BUILD_CLOUD = 'electronhq-16-core';
-const DEFAULT_BAKE_BASE_IMAGE = 'Windows_Default_Appveyor';
-const DEFAULT_BUILD_IMAGE = 'Windows_Default_Appveyor';
+const DEFAULT_BUILD_CLOUD_ID = '1424';
+const DEFAULT_BUILD_CLOUD = 'electron-16-core2';
+const DEFAULT_BAKE_BASE_IMAGE = 'base-electron';
+const DEFAULT_BUILD_IMAGE = 'base-electron';
 
 const appveyorBakeJob = 'electron-bake-image';
 const appVeyorJobs = {
@@ -57,7 +57,7 @@ async function checkAppVeyorImage (options) {
   const requestOpts = {
     url: IMAGE_URL,
     auth: {
-      bearer: process.env.APPVEYOR_CLOUD_TOKEN
+      bearer: process.env.APPVEYOR_TOKEN
     },
     headers: {
       'Content-Type': 'application/json'
@@ -100,7 +100,7 @@ function useAppVeyorImage (targetBranch, options) {
 
 async function callAppVeyorBuildJobs (targetBranch, job, options) {
   console.log(`Using AppVeyor image ${options.version} for ${job}`);
-  
+
   const pullRequestId = await getPullRequestId(targetBranch);
   const environmentVariables = {
     APPVEYOR_BUILD_WORKER_CLOUD: DEFAULT_BUILD_CLOUD,
@@ -116,7 +116,7 @@ async function callAppVeyorBuildJobs (targetBranch, job, options) {
   const requestOpts = {
     url: APPVEYOR_JOB_URL,
     auth: {
-      bearer: process.env.APPVEYOR_CLOUD_TOKEN
+      bearer: process.env.APPVEYOR_TOKEN
     },
     headers: {
       'Content-Type': 'application/json'
@@ -153,7 +153,7 @@ async function bakeAppVeyorImage (targetBranch, options) {
   const requestOpts = {
     url: APPVEYOR_JOB_URL,
     auth: {
-      bearer: process.env.APPVEYOR_CLOUD_TOKEN
+      bearer: process.env.APPVEYOR_TOKEN
     },
     headers: {
       'Content-Type': 'application/json'
@@ -184,21 +184,24 @@ async function prepareAppVeyorImage (opts) {
   } else {
     // eslint-disable-next-line no-control-regex
     const versionRegex = new RegExp('chromium_version\':\n +\'(.+?)\',', 'm');
-    const deps = fs.readFileSync(path.resolve(__dirname, '../DEPS'), 'utf8');
+    const deps = fs.readFileSync(path.resolve(__dirname, '..', 'DEPS'), 'utf8');
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
-    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}-test`;
+    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
     if (image && image.name) {
-      console.log(`Image exists for ${image.name}. Continuing AppVeyor jobs using ${cloudId}`);
-      useAppVeyorImage(branch, { ...opts, version: image.name, cloudId });
+      console.log(`Image exists for ${image.name}. Continuing AppVeyor jobs using ${cloudId}.\n`);
+      // useAppVeyorImage(branch, { ...opts, version: image.name, cloudId });
     } else {
       console.log(`No AppVeyor image found for ${imageVersion} in ${cloudId}.
                    Creating new image for ${imageVersion}, using Chromium ${CHROMIUM_VERSION} - job will run after image is baked.`);
       await bakeAppVeyorImage(branch, { ...opts, version: imageVersion, cloudId });
       // useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId });
+
+      // write image to temp file if running on CI
+      if (process.env.CI) fs.writeFileSync('./image_version.txt', imageVersion);
     }
   }
 }
