@@ -22,14 +22,9 @@
 # https://www.appveyor.com/docs/environment-variables/
 # https://www.appveyor.com/docs/build-configuration/#secure-variables
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
-
 version: 1.0.{build}
-# build_cloud: electron-16-core
-# image: vs2019bt-16.16.11
-# build_cloud: electron-16-core2
-# image: base-electron
-build_cloud: electronhq-16-core
-image: e-105.0.5187.0-testing
+build_cloud: electron-16-core2
+image: base-electron
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -42,36 +37,29 @@ environment:
   PYTHONIOENCODING: UTF-8
 build_script:
   - ps: >-
-      if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+      if (($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) { 
+
         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
       } else {
         node script/yarn.js install --frozen-lockfile
-
         $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
         Write-Output $result
+
         if ($result.ExitCode -eq 0) {
           # Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
         }
+
       }
   - ps: echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
-  - ps: >-
-      if (Test-Path -Path "$pwd\depot_tools") {
-        Remove-Item -Recurse -Force $pwd\depot_tools
-      }
-  - ps: >-
-      if (Test-Path -Path "$pwd\build-tools") {
-        Remove-Item -Recurse -Force $pwd\build-tools
-      }
-  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
-  - ps: $env:PATH="$pwd\depot_tools;$env:PATH" 
-  - ps: >-
-      if (Test-Path -Path "$pwd\src\electron") {
-        Remove-Item -Recurse -Force $pwd\src\electron
-      }
+  - ps: if (Test-Path -Path "$pwd\depot_tools") Remove-Item -Recurse -Force $pwd\depot_tools
+  - ps: if (Test-Path -Path "$pwd\build-tools") Remove-Item -Recurse -Force $pwd\build-tools
+  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
+  - ps: if (Test-Path -Path "$pwd\src\electron") Remove-Item -Recurse -Force $pwd\src\electron
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
-  - ps: >-
+  - ps: |
       if (Test-Path 'env:RAW_GOMA_AUTH') {
         $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
         $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
@@ -80,13 +68,13 @@ build_script:
   - cd build-tools
   - npm install
   - mkdir third_party
-  - ps: >-
+  - ps: |
       node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
   - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
   - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
   - cd ..
   - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
-  - ps: >-
+  - ps: |
       if (Test-Path 'env:RAW_GOMA_AUTH') {
         $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
         if ($goma_login -eq 'Login as Fermi Planck') {
@@ -97,7 +85,7 @@ build_script:
         }
       }
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
-  - ps: >-
+  - ps: |
       if ($env:GN_CONFIG -ne 'release') {
         $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
       }
@@ -115,17 +103,14 @@ build_script:
   - ps: $depshash = Get-Content .\.depshash -Raw
   - ps: $zipfile = "Z:\$depshash.7z"
   - ps: cd ..\..
-  # TODO: Remove these debugging lines
-  - ps: echo $depshash_baked
-  - ps: echo $depshash
-  # End remove lines
-  - ps: >-
-      if ($depshash_baked -eq $depshash) {
+  - ps: |
+      if ($depshash_baked -ne $depshash) {
         $env:RUN_GCLIENT_SYNC="true"
         if (Test-Path -Path $zipfile) {
           # file exists, unzip and then gclient sync
           7z x -y $zipfile -mmt=30 -aoa
           if (-not (Test-Path -Path "src\buildtools")) {
+
             if ($env:TARGET_ARCH -ne 'ia32') {
               # only save on x64/woa to avoid contention saving
               $env:SAVE_GCLIENT_SRC="true"
@@ -135,7 +120,7 @@ build_script:
       }
   - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
   - cd src
-  - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
+  - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
@@ -160,13 +145,13 @@ build_script:
       Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
   - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - 7z a node_headers.zip out\Default\gen\node_headers
-  - ps: >-
+  - ps: |
       if ($env:GN_CONFIG -eq 'release') {
         # Needed for msdia140.dll on 64-bit windows
         $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
         ninja -C out/Default electron:electron_symbols
       }
-  - ps: >-
+  - ps: |
       if ($env:GN_CONFIG -eq 'release') {
         python electron\script\zip-symbols.py
         appveyor-retry appveyor PushArtifact out/Default/symbols.zip
@@ -179,11 +164,11 @@ build_script:
 test_script:
   # Workaround for https://github.com/appveyor/ci/issues/2420
   - set "PATH=%PATH%;C:\Program Files\Git\mingw64\libexec\git-core"
-  - ps: >-
+  - ps: |
       if ((-Not (Test-Path Env:\TEST_WOA)) -And (-Not (Test-Path Env:\ELECTRON_RELEASE)) -And ($env:GN_CONFIG -in "testing", "release")) {
         $env:RUN_TESTS="true"
       }
-  - ps: >-
+  - ps: |
       if ($env:RUN_TESTS -eq 'true') {
         New-Item .\out\Default\gen\node_headers\Release -Type directory
         Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
@@ -192,7 +177,7 @@ test_script:
       }
   - cd electron
   - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file )
-  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file )  
+  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file )
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"
@@ -202,7 +187,7 @@ test_script:
   - echo "Done verifying chromedriver"
 deploy_script:
   - cd electron
-  - ps: >-
+  - ps: |
       if (Test-Path Env:\ELECTRON_RELEASE) {
         if (Test-Path Env:\UPLOAD_TO_STORAGE) {
           Write-Output "Uploading Electron release distribution to azure"
@@ -216,7 +201,7 @@ deploy_script:
       }
 on_finish:
   # Uncomment this lines to enable RDP
-  # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - cd ..
   - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
   - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
@@ -227,9 +212,8 @@ on_finish:
   - if exist out\Default\mksnapshot.zip (appveyor-retry appveyor PushArtifact out\Default\mksnapshot.zip)
   - if exist out\Default\hunspell_dictionaries.zip (appveyor-retry appveyor PushArtifact out\Default\hunspell_dictionaries.zip)
   - if exist out\Default\electron.lib (appveyor-retry appveyor PushArtifact out\Default\electron.lib)
-  - ps: >-
+  - ps: |
       if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
         appveyor-retry appveyor PushArtifact pdb.zip
       }
-
   - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )

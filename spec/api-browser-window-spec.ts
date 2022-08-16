@@ -5498,15 +5498,9 @@ describe('BrowserWindow module', () => {
         x: display.size.width - (display.size.width / 4),
         y: display.size.height / 2
       });
-      console.log('*********************');
-      console.log('leftHalfColor: ', leftHalfColor);
-      console.log('rightHalfColor: ', rightHalfColor);
-      console.log('CHROMA_COLOR_HEX: ', CHROMA_COLOR_HEX);
-      console.log('*********************');
 
-      // expect(areColorsSimilar(leftHalfColor, CHROMA_COLOR_HEX)).to.be.true();
-      // expect(areColorsSimilar(rightHalfColor, '#ff0000')).to.be.true();
-      expect(areColorsSimilar(rightHalfColor, '#ff0000')).to.be.false();
+      expect(areColorsSimilar(leftHalfColor, CHROMA_COLOR_HEX)).to.be.true();
+      expect(areColorsSimilar(rightHalfColor, '#ff0000')).to.be.true();
     });
   });
 
