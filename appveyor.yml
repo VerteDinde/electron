@@ -24,7 +24,7 @@
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
 version: 1.0.{build}
 build_cloud: electron-16-core2
-image: base-electron
+image: e-105.0.5187.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -36,20 +36,7 @@ environment:
   DEPOT_TOOLS_WIN_TOOLCHAIN: 0
   PYTHONIOENCODING: UTF-8
 build_script:
-  - ps: >-
-      if (($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) { 
-
-        Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-      } else {
-        node script/yarn.js install --frozen-lockfile
-        $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
-        Write-Output $result
-
-        if ($result.ExitCode -eq 0) {
-          # Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
-        }
-
-      }
+  - ps: "if (($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split \"/\")[0] -eq ($env:APPVEYOR_REPO_NAME -split \"/\")[0]) { \n\n  Write-warning \"Skipping PR build for branch\"; Exit-AppveyorBuild\n} else {\n  node script/yarn.js install --frozen-lockfile\n  $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH\n  Write-Output $result\n\n  if ($result.ExitCode -eq 0) {\n    # Write-warning \"Skipping build for doc only change\"; Exit-AppveyorBuild\n  }\n\n}"
   - ps: echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
@@ -90,11 +77,7 @@ build_script:
         $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
       }
   - >-
-      gclient config
-      --name "src\electron"
-      --unmanaged
-      %GCLIENT_EXTRA_ARGS%
-      "https://github.com/electron/electron"
+    gclient config --name "src\electron" --unmanaged %GCLIENT_EXTRA_ARGS% "https://github.com/electron/electron"
   # Patches are applied in the image bake. Check depshash to see if patches have changed. 
   - ps: $env:RUN_GCLIENT_SYNC="false"
   - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
