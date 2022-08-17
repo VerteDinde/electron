@@ -9,9 +9,8 @@
 #  - "APPVEYOR_BAKE_IMAGE" e.g. 'electron-99.0.4767.0'. Name of the image to be baked.
 #      Typically named after the Chromium version on which the image is built.
 #      This can be set dynamically in the prepare-appveyor script.
+
 version: 1.0.{build}
-# build_cloud: electron-16-core2
-# image: base-electron
 build_cloud: electronhq-16-core
 image: Windows_Default_Appveyor
 environment:
@@ -79,28 +78,6 @@ build_script:
         $env:SAVE_GCLIENT_SRC="true"
       }
   - gclient sync --with_branch_heads --with_tags --nohooks
-  # - ps: >-
-  #     if ($env:SAVE_GCLIENT_SRC -eq 'true') {
-  #       # archive current source for future use 
-  #       # only run on x64/woa to avoid contention saving
-  #       $(7z a $zipfile src -xr!android_webview -xr!electron -xr'!*\.git' -xr!third_party\WebKit\LayoutTests! -xr!third_party\blink\web_tests -xr!third_party\blink\perf_tests -slp -t7z -mmt=30)
-  #       if ($LASTEXITCODE -ne 0) {
-  #         Write-warning "Could not save source to shared drive; continuing anyway"
-  #       }
-  #       # build time generation of file gen/angle/angle_commit.h depends on
-  #       # third_party/angle/.git
-  #       # https://chromium-review.googlesource.com/c/angle/angle/+/2074924       
-  #       $(7z a $zipfile src\third_party\angle\.git)
-  #       if ($LASTEXITCODE -ne 0) {
-  #         Write-warning "Failed to add third_party\angle\.git; continuing anyway"
-  #       }
-  #       # build time generation of file dawn/common/Version_autogen.h depends on third_party/dawn/.git/HEAD
-  #       # https://dawn-review.googlesource.com/c/dawn/+/83901        
-  #       $(7z a $zipfile src\third_party\dawn\.git)
-  #       if ($LASTEXITCODE -ne 0) {
-  #         Write-warning "Failed to add third_party\dawn\.git; continuing anyway"
-  #       }
-  #     }
 on_image_bake:
   - ps: >-
       echo "Baking image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
