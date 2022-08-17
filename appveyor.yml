@@ -24,12 +24,8 @@
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
 
 version: 1.0.{build}
-# build_cloud: electron-16-core
-# image: vs2019bt-16.16.11
-# build_cloud: electron-16-core2
-# image: base-electron
 build_cloud: electronhq-16-core
-image: e-105.0.5187.0-testing
+image: e-105.0.5187.0-test
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -41,19 +37,18 @@ environment:
   DEPOT_TOOLS_WIN_TOOLCHAIN: 0
   PYTHONIOENCODING: UTF-8
 build_script:
+  - ps: echo "Building $env:GN_CONFIG build"
   - ps: >-
-      if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+      if (($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) { 
         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
       } else {
         node script/yarn.js install --frozen-lockfile
-
         $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
         Write-Output $result
         if ($result.ExitCode -eq 0) {
           # Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
         }
       }
-  - ps: echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
   - ps: >-
@@ -64,8 +59,8 @@ build_script:
       if (Test-Path -Path "$pwd\build-tools") {
         Remove-Item -Recurse -Force $pwd\build-tools
       }
-  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
-  - ps: $env:PATH="$pwd\depot_tools;$env:PATH" 
+  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
   - ps: >-
       if (Test-Path -Path "$pwd\src\electron") {
         Remove-Item -Recurse -Force $pwd\src\electron
@@ -115,17 +110,14 @@ build_script:
   - ps: $depshash = Get-Content .\.depshash -Raw
   - ps: $zipfile = "Z:\$depshash.7z"
   - ps: cd ..\..
-  # TODO: Remove these debugging lines
-  - ps: echo $depshash_baked
-  - ps: echo $depshash
-  # End remove lines
   - ps: >-
-      if ($depshash_baked -eq $depshash) {
+      if ($depshash_baked -ne $depshash) {
         $env:RUN_GCLIENT_SYNC="true"
         if (Test-Path -Path $zipfile) {
           # file exists, unzip and then gclient sync
           7z x -y $zipfile -mmt=30 -aoa
           if (-not (Test-Path -Path "src\buildtools")) {
+
             if ($env:TARGET_ARCH -ne 'ia32') {
               # only save on x64/woa to avoid contention saving
               $env:SAVE_GCLIENT_SRC="true"
@@ -133,9 +125,16 @@ build_script:
           }
         }
       }
-  - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
+  - ps: >-
+      if ("%RUN_GCLIENT_SYNC%"=="true") {
+        echo "Running full sync"
+        gclient sync --with_branch_heads --with_tags
+      } else {
+        echo "Running hooks"
+        gclient runhooks
+      }
   - cd src
-  - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
+  - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
@@ -192,7 +191,7 @@ test_script:
       }
   - cd electron
   - if "%RUN_TESTS%"=="true" ( echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file )
-  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file )  
+  - if "%RUN_TESTS%"=="true" ( echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file )
   - cd ..
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - echo "About to verify mksnapshot"
@@ -216,7 +215,7 @@ deploy_script:
       }
 on_finish:
   # Uncomment this lines to enable RDP
-  # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  #- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - cd ..
   - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
   - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
@@ -231,5 +230,4 @@ on_finish:
       if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
         appveyor-retry appveyor PushArtifact pdb.zip
       }
-
   - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
