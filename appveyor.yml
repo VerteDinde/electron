@@ -25,7 +25,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-105.0.5187.0
+image: ""
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -97,11 +97,7 @@ build_script:
         $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
       }
   - >-
-      gclient config
-      --name "src\electron"
-      --unmanaged
-      %GCLIENT_EXTRA_ARGS%
-      "https://github.com/electron/electron"
+    gclient config --name "src\electron" --unmanaged %GCLIENT_EXTRA_ARGS% "https://github.com/electron/electron"
   # Patches are applied in the image bake. Check depshash to see if patches have changed. 
   - ps: $env:RUN_GCLIENT_SYNC="false"
   - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
