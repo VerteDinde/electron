@@ -1,0 +1,26 @@
+28c27
+< image: e-105.0.5187.0-test
+---
+> image: e-105.0.5187.0-action-test
+41,51c40
+<   - ps: >-
+<       if (($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) { 
+<         Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+<       } else {
+<         node script/yarn.js install --frozen-lockfile
+<         $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+<         Write-Output $result
+<         if ($result.ExitCode -eq 0) {
+<           # Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+<         }
+<       }
+---
+>   - ps: "if (($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split \"/\")[0] -eq ($env:APPVEYOR_REPO_NAME -split \"/\")[0]) { \n  Write-warning \"Skipping PR build for branch\"; Exit-AppveyorBuild\n} else {\n  node script/yarn.js install --frozen-lockfile\n  $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH\n  Write-Output $result\n  if ($result.ExitCode -eq 0) {\n    # Write-warning \"Skipping build for doc only change\"; Exit-AppveyorBuild\n  }\n}"
+100,104c95
+<       gclient config
+<       --name "src\electron"
+<       --unmanaged
+<       %GCLIENT_EXTRA_ARGS%
+<       "https://github.com/electron/electron"
+---
+>     gclient config --name "src\electron" --unmanaged %GCLIENT_EXTRA_ARGS% "https://github.com/electron/electron"
