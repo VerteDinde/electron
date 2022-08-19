@@ -188,7 +188,7 @@ async function prepareAppVeyorImage (opts) {
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
-    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}`;
+    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}-testing`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
     if (image && image.name) {
@@ -196,7 +196,7 @@ async function prepareAppVeyorImage (opts) {
     } else {
       console.log(`No AppVeyor image found for ${imageVersion} in ${cloudId}.
                    Creating new image for ${imageVersion}, using Chromium ${CHROMIUM_VERSION} - job will run after image is baked.`);
-      await bakeAppVeyorImage(branch, { ...opts, version: imageVersion, cloudId });
+      // await bakeAppVeyorImage(branch, { ...opts, version: imageVersion, cloudId });
 
       // write image to temp file if running on CI
       if (process.env.CI) fs.writeFileSync('./image_version.txt', imageVersion);
