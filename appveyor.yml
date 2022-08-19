@@ -25,7 +25,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-105.0.5187.0
+image: e-106.0.5216.0-testing
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -38,12 +38,9 @@ environment:
   PYTHONIOENCODING: UTF-8
 
   matrix:
-
-  - job_name: Build
-
-  - job_name: Test
-    job_depends_on: Build
-
+    - job_name: Build
+    - job_name: Test
+      job_depends_on: Build
 clone_folder: C:\projects\src\electron
 
 # the first failed job cancels other jobs and fails entire build
@@ -51,140 +48,147 @@ matrix:
   fast_finish: true
 
 for:
-
-  -
-    matrix:
+  - matrix:
       only:
         - job_name: Build
 
     init:
-    - ps: >-
-        if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-          Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-        }
+      - ps: >-
+          if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
 
-    build_script:
-    - ps: |
-        node script/yarn.js install --frozen-lockfile
-        $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
-        Write-Output $result
-        if ($result.ExitCode -eq 0) {
-          Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
-        }
-    - cd ..
-    - ps: Write-Host "Building $env:GN_CONFIG build"
-    - git config --global core.longpaths true
-    - ps: >-
-        if (Test-Path -Path "$pwd\depot_tools") {
-          Remove-Item -Recurse -Force $pwd\depot_tools
-        }
-    - ps: >-
-        if (Test-Path -Path "$pwd\build-tools") {
-          Remove-Item -Recurse -Force $pwd\build-tools
-        }
-    - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-    - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
-    - ps: >-
-        if (Test-Path -Path "$pwd\src\electron") {
-          Remove-Item -Recurse -Force $pwd\src\electron
-        }
-    - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
-    - ps: >-
-        if (Test-Path 'env:RAW_GOMA_AUTH') {
-          $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
-          $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
-        }
-    - git clone https://github.com/electron/build-tools.git
-    - cd build-tools
-    - npm install
-    - mkdir third_party
-    - ps: >-
-        node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
-    - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
-    - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
-    - cd ..\..
-    - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
-    - ps: >-
-        if (Test-Path 'env:RAW_GOMA_AUTH') {
-          $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
-          if ($goma_login -eq 'Login as Fermi Planck') {
-            Write-warning "Goma authentication is correct";
-          } else {
-            Write-warning "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token.";
-            $host.SetShouldExit(1)
+            Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
           }
-        }
-    - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
-    - ps: >-
-        if ($env:GN_CONFIG -ne 'release') {
-          $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
-        }
-    - gclient config --name "src\electron" --unmanaged %GCLIENT_EXTRA_ARGS% "https://github.com/electron/electron"
-    # Patches are applied in the image bake. Check depshash to see if patches have changed. 
-    - ps: $env:RUN_GCLIENT_SYNC="false"
-    - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
-    - ps: cd src\electron
-    - ps: node script\generate-deps-hash.js
-    - ps: $depshash = Get-Content .\.depshash -Raw
-    - ps: $zipfile = "Z:\$depshash.7z"
-    - ps: cd ..\..
-    - ps: >-
-        if ($depshash_baked -ne $depshash) {
-          $env:RUN_GCLIENT_SYNC="true"
-          if (Test-Path -Path $zipfile) {
-            # file exists, unzip and then gclient sync
-            7z x -y $zipfile -mmt=14 -aoa
-            if (-not (Test-Path -Path "src\buildtools")) {
-              if ($env:TARGET_ARCH -ne 'ia32') {
-                # only save on x64/woa to avoid contention saving
-                $env:SAVE_GCLIENT_SRC="true"
+    build_script:
+      - ps: |
+          node script/yarn.js install --frozen-lockfile
+          $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+          Write-Output $result
+          if ($result.ExitCode -eq 0) {
+            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+          }
+      - cd ..
+      - ps: Write-Host "Building $env:GN_CONFIG build"
+      - git config --global core.longpaths true
+      - ps: >-
+          if (Test-Path -Path "$pwd\depot_tools") {
+
+            Remove-Item -Recurse -Force $pwd\depot_tools
+          }
+      - ps: >-
+          if (Test-Path -Path "$pwd\build-tools") {
+
+            Remove-Item -Recurse -Force $pwd\build-tools
+          }
+      - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
+      - ps: >-
+          if (Test-Path -Path "$pwd\src\electron") {
+
+            Remove-Item -Recurse -Force $pwd\src\electron
+          }
+      - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
+      - ps: >-
+          if (Test-Path 'env:RAW_GOMA_AUTH') {
+
+            $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
+            $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
+          }
+      - git clone https://github.com/electron/build-tools.git
+      - cd build-tools
+      - npm install
+      - mkdir third_party
+      - ps: >-
+          node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
+      - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
+      - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
+      - cd ..\..
+      - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
+      - ps: >-
+          if (Test-Path 'env:RAW_GOMA_AUTH') {
+
+            $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
+            if ($goma_login -eq 'Login as Fermi Planck') {
+              Write-warning "Goma authentication is correct";
+            } else {
+              Write-warning "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token.";
+              $host.SetShouldExit(1)
+            }
+          }
+      - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
+      - ps: >-
+          if ($env:GN_CONFIG -ne 'release') {
+
+            $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
+          }
+      - gclient config --name "src\electron" --unmanaged %GCLIENT_EXTRA_ARGS% "https://github.com/electron/electron"
+      # Patches are applied in the image bake. Check depshash to see if patches have changed. 
+      - ps: $env:RUN_GCLIENT_SYNC="false"
+      - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
+      - ps: cd src\electron
+      - ps: node script\generate-deps-hash.js
+      - ps: $depshash = Get-Content .\.depshash -Raw
+      - ps: $zipfile = "Z:\$depshash.7z"
+      - ps: cd ..\..
+      - ps: >-
+          if ($depshash_baked -ne $depshash) {
+
+            $env:RUN_GCLIENT_SYNC="true"
+            if (Test-Path -Path $zipfile) {
+              # file exists, unzip and then gclient sync
+              7z x -y $zipfile -mmt=14 -aoa
+              if (-not (Test-Path -Path "src\buildtools")) {
+                if ($env:TARGET_ARCH -ne 'ia32') {
+                  # only save on x64/woa to avoid contention saving
+                  $env:SAVE_GCLIENT_SRC="true"
+                }
               }
             }
           }
-        }
-    - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
-    - cd src
-    - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
-    - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
-    - gn check out/Default //electron:electron_lib
-    - gn check out/Default //electron:electron_app
-    - gn check out/Default //electron/shell/common/api:mojo
-    - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
-    - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
-    - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
-    - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
-    - ninja -C out/Default electron:electron_dist_zip
-    - ninja -C out/Default shell_browser_ui_unittests
-    - gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
-    - ninja -C out/Default electron:electron_mksnapshot_zip
-    - cd out\Default
-    - 7z a mksnapshot.zip mksnapshot_args gen\v8\embedded.S
-    - cd ..\..
-    - ninja -C out/Default electron:hunspell_dictionaries_zip
-    - ninja -C out/Default electron:electron_chromedriver_zip
-    - ninja -C out/Default third_party/electron_node:headers
-    - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
-    - ps: >-
-        Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
-    - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
-    - 7z a node_headers.zip out\Default\gen\node_headers
-    - ps: >-
-        if ($env:GN_CONFIG -eq 'release') {
-          # Needed for msdia140.dll on 64-bit windows
-          $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
-          ninja -C out/Default electron:electron_symbols
-        }
-    - ps: >-
-        if ($env:GN_CONFIG -eq 'release') {
-          python electron\script\zip-symbols.py
-          appveyor-retry appveyor PushArtifact out/Default/symbols.zip
-        } else {
-          # It's useful to have pdb files when debugging testing builds that are
-          # built on CI.
-          7z a pdb.zip out\Default\*.pdb
-        }
-    - python electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
+      - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
+      - cd src
+      - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
+      - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
+      - gn check out/Default //electron:electron_lib
+      - gn check out/Default //electron:electron_app
+      - gn check out/Default //electron/shell/common/api:mojo
+      - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
+      - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
+      - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
+      - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
+      - ninja -C out/Default electron:electron_dist_zip
+      - ninja -C out/Default shell_browser_ui_unittests
+      - gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+      - ninja -C out/Default electron:electron_mksnapshot_zip
+      - cd out\Default
+      - 7z a mksnapshot.zip mksnapshot_args gen\v8\embedded.S
+      - cd ..\..
+      - ninja -C out/Default electron:hunspell_dictionaries_zip
+      - ninja -C out/Default electron:electron_chromedriver_zip
+      - ninja -C out/Default third_party/electron_node:headers
+      - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
+      - ps: >-
+          Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
+      - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+      - 7z a node_headers.zip out\Default\gen\node_headers
+      - ps: >-
+          if ($env:GN_CONFIG -eq 'release') {
 
+            # Needed for msdia140.dll on 64-bit windows
+            $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
+            ninja -C out/Default electron:electron_symbols
+          }
+      - ps: >-
+          if ($env:GN_CONFIG -eq 'release') {
+
+            python electron\script\zip-symbols.py
+            appveyor-retry appveyor PushArtifact out/Default/symbols.zip
+          } else {
+
+            # It's useful to have pdb files when debugging testing builds that are
+            # built on CI.
+            7z a pdb.zip out\Default\*.pdb
+          }
+      - python electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
     deploy_script:
       - cd electron
       - ps: >-
@@ -216,56 +220,34 @@ for:
           if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
             appveyor-retry appveyor PushArtifact pdb.zip
           }
-  -
-    matrix:
+  - matrix:
       only:
         - job_name: Test
 
     init:
-    - ps: |
-        if ($env:RUN_TESTS -ne 'true') {
-          Write-warning "Skipping tests for $env:APPVEYOR_PROJECT_NAME"; Exit-AppveyorBuild
-        }
-        if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-          Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-        }
-    build_script:
-    - ps: |
-        node script/yarn.js install --frozen-lockfile
-        $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
-        Write-Output $result
-        if ($result.ExitCode -eq 0) {
-          Write-warning "Skipping tests for doc only change"; Exit-AppveyorBuild
-        }
-    - ps: |
-        cd ..
-        mkdir out\Default
-        cd ..
-        # Download build artifacts
-        $apiUrl = 'https://ci.appveyor.com/api'             
-        $build_info = Invoke-RestMethod -Method Get -Uri "$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID"
-        $artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib')
-        foreach ($job in $build_info.build.jobs) {
-          if ($job.name -eq "Build") {
-            $jobId = $job.jobId
-            foreach($artifact_name in $artifacts_to_download) {
-              if ($artifact_name -eq 'shell_browser_ui_unittests.exe' -Or $artifact_name -eq 'electron.lib') {
-                $outfile = "src\out\Default\$artifact_name"
-              } else {
-                $outfile = $artifact_name
-              }
-              Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/$artifact_name" -OutFile $outfile
-            }
+      - ps: |
+          if ($env:RUN_TESTS -ne 'true') {
+            Write-warning "Skipping tests for $env:APPVEYOR_PROJECT_NAME"; Exit-AppveyorBuild
           }
-        }
-    - ps: |
-        $out_default_zips = @('dist.zip','chromedriver.zip','mksnapshot.zip')
-        foreach($zip_name in $out_default_zips) {
-          7z x -y -osrc\out\Default $zip_name
-        }
-    - ps: 7z x -y -osrc\out\ffmpeg ffmpeg.zip
-    - ps: 7z x -y -osrc node_headers.zip
-
+          if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+            Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+          }
+    build_script:
+      - ps: |
+          node script/yarn.js install --frozen-lockfile
+          $result = node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+          Write-Output $result
+          if ($result.ExitCode -eq 0) {
+            Write-warning "Skipping tests for doc only change"; Exit-AppveyorBuild
+          }
+      - ps: "cd ..\nmkdir out\\Default\ncd ..\n# Download build artifacts\n$apiUrl = 'https://ci.appveyor.com/api'             \n$build_info = Invoke-RestMethod -Method Get -Uri \"$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID\"\n$artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib')\nforeach ($job in $build_info.build.jobs) {\n  if ($job.name -eq \"Build\") {\n    $jobId = $job.jobId\n    foreach($artifact_name in $artifacts_to_download) {\n      if ($artifact_name -eq 'shell_browser_ui_unittests.exe' -Or $artifact_name -eq 'electron.lib') {\n        $outfile = \"src\\out\\Default\\$artifact_name\"\n      } else {\n        $outfile = $artifact_name\n      }\n      Invoke-RestMethod -Method Get -Uri \"$apiUrl/buildjobs/$jobId/artifacts/$artifact_name\" -OutFile $outfile\n    }\n  }\n}\n"
+      - ps: |
+          $out_default_zips = @('dist.zip','chromedriver.zip','mksnapshot.zip')
+          foreach($zip_name in $out_default_zips) {
+            7z x -y -osrc\out\Default $zip_name
+          }
+      - ps: 7z x -y -osrc\out\ffmpeg ffmpeg.zip
+      - ps: 7z x -y -osrc node_headers.zip
     test_script:
       # Workaround for https://github.com/appveyor/ci/issues/2420
       - set "PATH=%PATH%;C:\Program Files\Git\mingw64\libexec\git-core"
