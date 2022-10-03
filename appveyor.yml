@@ -25,7 +25,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-106.0.5216.0
+image: e-107.0.5286.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -134,6 +134,7 @@ for:
           if ($depshash_baked -ne $depshash) {
             $env:RUN_GCLIENT_SYNC="true"
           }
+      - ps: >-
           if ($env:TARGET_ARCH -eq 'ia32') {
             $env:RUN_GCLIENT_SYNC="true"
           }
@@ -227,7 +228,6 @@ for:
           }
     build_script:
       - ps: >-
-          # force .npmrc arch to ia32 to build correctly
           if ($env:TARGET_ARCH -eq 'ia32') {
             "arch=ia32" | Out-File -FilePath C:\projects\src\electron\.npmrc
           }
@@ -244,7 +244,7 @@ for:
       - cd ..
       - ps: |
           # Download build artifacts
-          $apiUrl = 'https://ci.appveyor.com/api'             
+          $apiUrl = 'https://ci.appveyor.com/api'
           $build_info = Invoke-RestMethod -Method Get -Uri "$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID"
           $artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib', 'builtins-pgo.zip')
           foreach ($job in $build_info.build.jobs) {
@@ -287,7 +287,7 @@ for:
       - echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
       - echo "Done verifying chromedriver"
 
-    on_finish:
-      # Uncomment these lines to enable RDP
-      # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-      # - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
+    # Uncomment these lines to enable RDP
+    # on_finish:
+    #   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+    #   - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
