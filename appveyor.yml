@@ -25,7 +25,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-107.0.5286.0
+image: e-108.0.5329.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -242,24 +242,7 @@ for:
       - cd ..
       - mkdir out\Default
       - cd ..
-      - ps: |
-          # Download build artifacts
-          $apiUrl = 'https://ci.appveyor.com/api'             
-          $build_info = Invoke-RestMethod -Method Get -Uri "$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID"
-          $artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib', 'builtins-pgo.zip')
-          foreach ($job in $build_info.build.jobs) {
-            if ($job.name -eq "Build") {
-              $jobId = $job.jobId
-              foreach($artifact_name in $artifacts_to_download) {
-                if ($artifact_name -eq 'shell_browser_ui_unittests.exe' -Or $artifact_name -eq 'electron.lib') {
-                  $outfile = "src\out\Default\$artifact_name"
-                } else {
-                  $outfile = $artifact_name
-                }
-                Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/$artifact_name" -OutFile $outfile
-              }
-            }
-          }
+      - ps: "# Download build artifacts\n$apiUrl = 'https://ci.appveyor.com/api'             \n$build_info = Invoke-RestMethod -Method Get -Uri \"$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID\"\n$artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib', 'builtins-pgo.zip')\nforeach ($job in $build_info.build.jobs) {\n  if ($job.name -eq \"Build\") {\n    $jobId = $job.jobId\n    foreach($artifact_name in $artifacts_to_download) {\n      if ($artifact_name -eq 'shell_browser_ui_unittests.exe' -Or $artifact_name -eq 'electron.lib') {\n        $outfile = \"src\\out\\Default\\$artifact_name\"\n      } else {\n        $outfile = $artifact_name\n      }\n      Invoke-RestMethod -Method Get -Uri \"$apiUrl/buildjobs/$jobId/artifacts/$artifact_name\" -OutFile $outfile\n    }\n  }\n}\n"
       - ps: |
           $out_default_zips = @('dist.zip','chromedriver.zip','mksnapshot.zip')
           foreach($zip_name in $out_default_zips) {
@@ -288,6 +271,6 @@ for:
       - echo "Done verifying chromedriver"
 
     on_finish:
-      # Uncomment these lines to enable RDP
-      # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-      # - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
+# Uncomment these lines to enable RDP
+# - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+# - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
